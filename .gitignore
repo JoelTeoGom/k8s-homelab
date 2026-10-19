@@ -1,0 +1,4 @@
+cloud-init/
+*.qcow2
+*.img
+*.iso
