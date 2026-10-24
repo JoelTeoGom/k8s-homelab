@@ -4,7 +4,7 @@
 
 [← Part 1: three VMs](../part-1-vms/README.md) · [Index](../../README.md)
 
-> **Status: in progress.** The nodes are ready (sections 1-5); the cluster itself (section 7) is next. Written while building it: every output below is from my lab.
+> **Status: in progress.** All three nodes are prepared (sections 1-4, done on every node). Next: `kubeadm init` (section 7). Written while building it: every output below is from my lab.
 
 [Part 1](../part-1-vms/README.md) left three empty Ubuntu VMs on a private network. In this part they become a Kubernetes cluster: **one control plane (`cp-1`) and two workers (`worker-1`, `worker-2`)**, built with `kubeadm` and nothing else.
 
@@ -24,13 +24,15 @@ The plan:
 6. What `kubeadm init` and `join` actually do
 7. Bootstrap the cluster *(next)*
 
-> **How to follow along.** Sections 1-4 run on **all three nodes**: `ssh cp-1`, run the commands, check the output, then repeat on `worker-1` and `worker-2`. Many kubeadm guides are written for RHEL-family distros (`dnf`, `firewalld`, SELinux); these nodes are Ubuntu 24.04, so everything here uses `apt`, `ufw` and AppArmor.
+> **How to follow along.** Sections 1-4 run on **all three nodes** (each one starts with a **Run on** note). Many kubeadm guides are written for RHEL-family distros (`dnf`, `firewalld`, SELinux); these nodes are Ubuntu 24.04, so everything here uses `apt`, `ufw` and AppArmor.
 
 > **Tip:** before starting, snapshot the clean VMs on the host (`virsh snapshot-create-as <vm> clean-nodes` with the VM shut off). It's an undo button, and it lets you repeat the whole install as practice.
 
 ---
 
 ## 1. Get the OS ready for Kubernetes
+
+> **Run on:** every node (`cp-1`, `worker-1`, `worker-2`), one at a time: `ssh cp-1`, run the commands, check the output, then the same on `worker-1` and `worker-2`.
 
 Five checks, on every node. Most were already fine on a fresh Ubuntu cloud image, but each one exists because something specific breaks without it.
 
@@ -119,13 +121,24 @@ cat <<EOF | sudo tee -a /etc/hosts
 192.168.122.11 worker-1
 192.168.122.12 worker-2
 EOF
-
-getent hosts cp-1 worker-1 worker-2   # all three, with their 192.168.122.x IPs
 ```
+
+**See it yourself**, on every node: each one must resolve and reach the other two by name.
+
+```bash
+getent hosts cp-1 worker-1 worker-2   # all three, with their 192.168.122.x IPs
+ping -c 1 cp-1
+ping -c 1 worker-1
+ping -c 1 worker-2
+```
+
+Run it on `cp-1`, then on `worker-1`, then on `worker-2`. If a node can't reach another one now, `kubeadm join` won't either.
 
 ---
 
 ## 2. Install a container runtime: containerd
+
+> **Run on:** every node (`cp-1`, `worker-1`, `worker-2`), one at a time: `ssh cp-1`, run the commands, check the output, then the same on `worker-1` and `worker-2`.
 
 The kubelet never runs containers itself. It asks a **container runtime** through an API called the **CRI** (Container Runtime Interface). We use containerd, and under it a couple more pieces do the real work:
 
@@ -219,6 +232,8 @@ The `skip` lines (`btrfs`, `zfs`, `devmapper`...) are snapshotters for filesyste
 
 ## 3. Install kubeadm, kubelet and kubectl
 
+> **Run on:** every node (`cp-1`, `worker-1`, `worker-2`), one at a time: `ssh cp-1`, run the commands, check the output, then the same on `worker-1` and `worker-2`.
+
 | Package | What it is |
 |---|---|
 | **kubeadm** | the bootstrap tool: `init` builds the control plane, `join` adds a worker |
@@ -299,6 +314,8 @@ The kubelet starts, looks for its config file, doesn't find it, exits. Its servi
 ---
 
 ## 4. Add crictl, a debugging client
+
+> **Run on:** every node (`cp-1`, `worker-1`, `worker-2`), one at a time: `ssh cp-1`, run the commands, check the output, then the same on `worker-1` and `worker-2`.
 
 `crictl` doesn't come with kubeadm anymore, so it gets installed on its own. On a missing `crictl`, Ubuntu suggests `critcl`, an unrelated Tcl compiler: don't install that.
 
@@ -397,6 +414,8 @@ The difference between the two commands is how the node gets that certificate:
 
 ## 7. Bootstrap the cluster *(next)*
 
+> **Run on:** `cp-1` only (`kubeadm init`). The workers come later, with `kubeadm join`.
+
 On `cp-1`, the flags that matter in this lab:
 
 | Flag | Why |
@@ -422,8 +441,11 @@ On `cp-1`, the flags that matter in this lab:
 
 ## Done when (so far)
 
-- [x] clocks synced, swap off, modules and sysctls set on all nodes
+- [x] clocks synced, firewall inactive, swap off, modules and sysctls set on all nodes
+- [x] `/etc/hosts` with the three nodes, and every node pings the others by name
+- [x] containerd with CRI on and `SystemdCgroup = true` on all nodes
 - [x] kubeadm, kubelet, kubectl v1.34.12, held, on all nodes
-- [x] containerd with CRI on and `SystemdCgroup = true` on `cp-1`
-- [ ] containerd, `/etc/hosts` and crictl confirmed on the workers
-- [ ] `kubectl get nodes` → 3 nodes `Ready`
+- [x] crictl on all nodes: `RuntimeReady: true`, `NetworkReady: false` (expected)
+- [ ] `kubeadm init` on `cp-1`
+- [ ] CNI installed, nodes `Ready`
+- [ ] workers joined: `kubectl get nodes` → 3 nodes `Ready`
