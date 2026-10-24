@@ -4,7 +4,7 @@ Kubernetes on an old laptop, built by hand: KVM virtual machines, kubeadm, ingre
 
 The goal is to understand every layer, from the CPU's virtualization extensions up to a `git push` that deploys an app, and to document each step so anyone can follow along.
 
-![What Phase 1 builds](docs/diagrams/phase-1/00-big-picture.png)
+![What Phase 1 builds](docs/phase-0-1-host-and-vms/diagrams/00-big-picture.png)
 
 ## Hardware
 
@@ -16,7 +16,7 @@ One old HP laptop: AMD Ryzen 7 3700U (4 cores / 8 threads), 5.7 GB of usable RAM
 |---|---|---|
 | 0 | **Host**: Ubuntu Server, SSH-only, hardening, BIOS virtualization | Done |
 | 1 | **VMs**: KVM + QEMU + libvirt, cloud images, cloud-init, fixed IPs, ProxyJump | Done |
-| 2 | **Cluster**: kubeadm, containerd, 1 control plane + 2 workers, Flannel | Next |
+| 2 | **Cluster**: kubeadm, containerd, 1 control plane + 2 workers, Flannel ([doc](docs/phase-2-kubeadm/README.md)) | In progress: nodes prepared, cluster next |
 | 3 | **Traffic in**: Traefik + Gateway API, DNAT on the host, Cloudflare Tunnel | Planned |
 | 4 | **GitOps & CI/CD**: GitHub Actions → GHCR → manifest repo → Argo CD | Planned |
 | 5 | **Secrets**: Sealed Secrets, then External Secrets + GCP Secret Manager | Planned |
@@ -29,16 +29,30 @@ One old HP laptop: AMD Ryzen 7 3700U (4 cores / 8 threads), 5.7 GB of usable RAM
 ├── scripts/
 │   └── create-vms.sh      # Phase 1: creates cp-1, worker-1, worker-2
 ├── docs/
-│   ├── guide.md           # full step-by-step guide, with the "why" of every step
-│   ├── articles/          # blog posts, one per phase
-│   └── diagrams/          # Excalidraw sources (.excalidraw) + PNG exports
+│   ├── phase-0-1-host-and-vms/
+│   │   ├── README.md      # Phases 0-1: full step-by-step guide, with the "why" of every step
+│   │   └── diagrams/      # Excalidraw sources (.excalidraw) + PNG exports
+│   ├── phase-2-kubeadm/
+│   │   ├── README.md      # Phase 2: index
+│   │   ├── 01-prepare-nodes.md       # Part A (nodes)
+│   │   ├── 02-bootstrap-cluster.md   # Part B (cluster)
+│   │   └── diagrams/
+│   └── blog/              # blog posts, one per phase
 └── README.md
 ```
 
 ## Read it
 
-- **[Full guide](docs/guide.md)**: every command, what it does and why.
-- **[Part 1: three VMs on an old laptop](docs/articles/part-1-three-vms-on-an-old-laptop.md)**: KVM vs QEMU vs libvirt, the libvirt network, DHCP reservations, qcow2 overlays, cloud-init and SSH ProxyJump.
+The guide, in order:
+
+1. **[Phases 0-1: host and VMs](docs/phase-0-1-host-and-vms/README.md)**: full guide, every command, what it does and why.
+2. **[Phase 2: kubeadm](docs/phase-2-kubeadm/README.md)**: in progress, written while building it.
+   - [Part A: prepare the nodes](docs/phase-2-kubeadm/01-prepare-nodes.md): OS prerequisites, containerd, kubeadm/kubelet/kubectl, crictl, and a troubleshooting table.
+   - [Part B: bootstrap the cluster](docs/phase-2-kubeadm/02-bootstrap-cluster.md): `kubeadm init`, CNI, `join`. Next.
+
+Blog posts (same story, shorter):
+
+- **[Part 1: three VMs on an old laptop](docs/blog/part-1-three-vms-on-an-old-laptop.md)**: KVM vs QEMU vs libvirt, the libvirt network, DHCP reservations, qcow2 overlays, cloud-init and SSH ProxyJump.
 
 Posts are also published on [runtimerants.dev](https://runtimerants.dev).
 

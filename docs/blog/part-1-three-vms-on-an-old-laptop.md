@@ -9,7 +9,7 @@ In [Part 0](#) an old HP laptop became a headless Ubuntu server sitting on my de
 
 No Proxmox, no Multipass, no magic. Just the same three pieces that power a big chunk of the cloud underneath: **KVM, QEMU and libvirt**. Every step gets a "what just happened" and a command so you can see it for yourself.
 
-![What we build in this part](../diagrams/phase-1/00-big-picture.png)
+![What we build in this part](../phase-0-1-host-and-vms/diagrams/00-big-picture.png)
 
 What you'll end up with:
 
@@ -38,7 +38,7 @@ The plan:
 
 People use these three names interchangeably. They are three different layers:
 
-![KVM vs QEMU vs libvirt](../diagrams/phase-1/01-kvm-qemu-libvirt.png)
+![KVM vs QEMU vs libvirt](../phase-0-1-host-and-vms/diagrams/01-kvm-qemu-libvirt.png)
 
 - **KVM** is a **kernel module** (`kvm` + `kvm_amd` on my AMD CPU). It uses the CPU's virtualization extensions (AMD-V / SVM) so guest code runs **natively** on the real CPU. KVM does CPU and memory, nothing else.
 - **QEMU** is **one regular process per VM**. It *is* the machine: it emulates the disk controller, the network card, the firmware, and asks KVM, through `ioctl(/dev/kvm)`, to run the guest's vCPUs. Each vCPU is just a thread of that process, and the guest RAM is just that process's memory.
@@ -76,7 +76,7 @@ virsh net-list --all        # "default  active  yes"
 
 When libvirt started the `default` network, it quietly built a small network inside the host:
 
-![The default network](../diagrams/phase-1/02-default-network.png)
+![The default network](../phase-0-1-host-and-vms/diagrams/02-default-network.png)
 
 - **`virbr0`** is a **bridge**, a virtual switch living in the kernel. Every VM gets plugged into it through a `vnetX` interface (a virtual cable).
 - `virbr0` also has an IP, **`192.168.122.1`**. That's the **gateway** for the VMs: it's an interface of the host itself.
@@ -100,7 +100,7 @@ Kubernetes needs stable addresses. `kubeadm` writes the control-plane IP into ce
 
 We never configure an IP *inside* the VM. Instead, we tell the DHCP server what to answer:
 
-![Fixed MAC to fixed IP](../diagrams/phase-1/03-dhcp-reservation.png)
+![Fixed MAC to fixed IP](../phase-0-1-host-and-vms/diagrams/03-dhcp-reservation.png)
 
 ```bash
 for vm in "cp-1 10" "worker-1 11" "worker-2 12"; do
@@ -130,7 +130,7 @@ We don't install Ubuntu three times. We download an **Ubuntu cloud image** once 
 
 Each VM then gets a **qcow2 overlay** on top of it:
 
-![qcow2 overlays](../diagrams/phase-1/04-qcow2-overlays.png)
+![qcow2 overlays](../phase-0-1-host-and-vms/diagrams/04-qcow2-overlays.png)
 
 ```bash
 sudo qemu-img create -f qcow2 -F qcow2 \
@@ -148,7 +148,7 @@ It's the same idea as Docker image layers or an AWS AMI.
 
 A cloned disk is the same for every VM: no hostname, no user, no SSH keys. **cloud-init** fixes that on the first boot:
 
-![cloud-init](../diagrams/phase-1/05-cloud-init.png)
+![cloud-init](../phase-0-1-host-and-vms/diagrams/05-cloud-init.png)
 
 ```yaml
 #cloud-config
@@ -259,7 +259,7 @@ sudo ls -lh /var/lib/libvirt/images/   # tiny overlays next to the base
 
 We have three running VMs. Can we reach them? Not yet:
 
-![Who can talk to whom](../diagrams/phase-1/06-who-talks-to-whom.png)
+![Who can talk to whom](../phase-0-1-host-and-vms/diagrams/06-who-talks-to-whom.png)
 
 - **VM → Internet: OK.** Out through `virbr0`, NAT on the host, and NAT again on the router (double NAT). That's how `apt` and cloud-init work.
 - **Internet → VM: no.** Nothing outside knows `192.168.122.0/24` exists.
@@ -287,7 +287,7 @@ Host cp-1 worker-1 worker-2
 
 Now `ssh cp-1` just works. Under the hood it's a tunnel inside a tunnel:
 
-![ProxyJump](../diagrams/phase-1/07-proxyjump.png)
+![ProxyJump](../phase-0-1-host-and-vms/diagrams/07-proxyjump.png)
 
 1. SSH opens a connection to the HP (**SSH #1**), authenticated with my key.
 2. Through it, it asks the HP to open a plain TCP connection to `192.168.122.10:22`.

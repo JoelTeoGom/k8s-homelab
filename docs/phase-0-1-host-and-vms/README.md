@@ -1,5 +1,7 @@
 # Guide — on-premise Kubernetes platform
 
+[← Home](../../README.md) · [Phase 2: kubeadm →](../phase-2-kubeadm/README.md)
+
 A production-style Kubernetes platform running 24/7 on an old laptop at home, built by hand to learn every layer: hypervisor, virtual machines, networking, kubeadm, GitOps and CI/CD.
 
 This is both the **spec** and the **guide**: what I built, how, and *why* each piece works the way it does. If you want to reproduce it, follow the phases in order.
