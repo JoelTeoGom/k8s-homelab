@@ -347,22 +347,9 @@ The binaries came with the `kubernetes-cni` package; the config folder is empty,
 
 Every node now has the OS prepared, containerd with CRI on and systemd cgroups, and the Kubernetes packages pinned at v1.34.12. What's missing is **the cluster itself**: no certificates, no etcd, no API server, no pod network.
 
-> [!CAUTION]
-> **Troubleshooting shortcut: if a prerequisite is missing, this is what you'll see.**
->
-> | Missing / wrong | Symptom | Check |
-> |---|---|---|
-> | clocks out of sync | certificate "not yet valid" / "expired", `join` token rejected | `timedatectl` |
-> | firewall filtering | `join` hangs, `kubectl logs` times out, cross-node pods can't talk | `sudo ufw status` |
-> | swap on | kubelet won't start; preflight error | `swapon --show` |
-> | `overlay` not loaded | containers fail to start | `lsmod \| grep overlay` |
-> | `br_netfilter` / bridge sysctls | preflight error; Services broken between pods on the same node | `sysctl net.bridge.bridge-nf-call-iptables` |
-> | `ip_forward = 0` | preflight error; no traffic between nodes' pods | `sysctl net.ipv4.ip_forward` |
-> | hostname → `127.0.1.1` | node registers with the wrong IP | `getent hosts $(hostname)` |
-> | CRI disabled in containerd | "container runtime is not running" | `crictl info` |
-> | `SystemdCgroup = false` | unstable node, pods restarting for no clear reason | `sudo containerd config dump \| grep SystemdCgroup` |
-> | different versions per node | `join` refused | `kubeadm version` on each node |
-> | no CNI | nodes `NotReady`, CoreDNS `Pending` | `crictl info`, `kubectl get nodes` |
+If a node misbehaves later, start here: every row is one of the steps above, the symptom you'd see without it, and how to check.
+
+![If a prerequisite is missing, this is what you see](diagrams/05-troubleshooting.png)
 
 ---
 
