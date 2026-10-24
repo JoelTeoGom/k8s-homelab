@@ -1,15 +1,14 @@
----
-title: "Homelab Part 1: three VMs on an old laptop (KVM, QEMU, libvirt from scratch)"
-date: 2026-10-19
-tags: [homelab, kubernetes, kvm, qemu, libvirt, cloud-init, networking]
-series: "Kubernetes on an old laptop"
----
+# Part 1 — Three VMs on an old laptop
 
-In [Part 0](#) an old HP laptop became a headless Ubuntu server sitting on my desk. In this part we turn it into **three machines**: one control plane and two workers, ready for `kubeadm` in Part 2.
+*KVM, QEMU and libvirt from scratch*
+
+[← Part 0: the host](../part-0-host/README.md) · [Index](../../README.md) · [Part 2: the cluster →](../part-2-cluster/README.md)
+
+In [Part 0](../part-0-host/README.md) an old HP laptop became a headless Ubuntu server sitting on my desk. In this part we turn it into **three machines**: one control plane and two workers, ready for `kubeadm` in Part 2.
 
 No Proxmox, no Multipass, no magic. Just the same three pieces that power a big chunk of the cloud underneath: **KVM, QEMU and libvirt**. Every step gets a "what just happened" and a command so you can see it for yourself.
 
-![What we build in this part](../phase-0-1-host-and-vms/diagrams/00-big-picture.png)
+![What we build in this part](diagrams/00-big-picture.png)
 
 What you'll end up with:
 
@@ -38,7 +37,7 @@ The plan:
 
 People use these three names interchangeably. They are three different layers:
 
-![KVM vs QEMU vs libvirt](../phase-0-1-host-and-vms/diagrams/01-kvm-qemu-libvirt.png)
+![KVM vs QEMU vs libvirt](diagrams/01-kvm-qemu-libvirt.png)
 
 - **KVM** is a **kernel module** (`kvm` + `kvm_amd` on my AMD CPU). It uses the CPU's virtualization extensions (AMD-V / SVM) so guest code runs **natively** on the real CPU. KVM does CPU and memory, nothing else.
 - **QEMU** is **one regular process per VM**. It *is* the machine: it emulates the disk controller, the network card, the firmware, and asks KVM, through `ioctl(/dev/kvm)`, to run the guest's vCPUs. Each vCPU is just a thread of that process, and the guest RAM is just that process's memory.
@@ -76,7 +75,7 @@ virsh net-list --all        # "default  active  yes"
 
 When libvirt started the `default` network, it quietly built a small network inside the host:
 
-![The default network](../phase-0-1-host-and-vms/diagrams/02-default-network.png)
+![The default network](diagrams/02-default-network.png)
 
 - **`virbr0`** is a **bridge**, a virtual switch living in the kernel. Every VM gets plugged into it through a `vnetX` interface (a virtual cable).
 - `virbr0` also has an IP, **`192.168.122.1`**. That's the **gateway** for the VMs: it's an interface of the host itself.
@@ -100,7 +99,7 @@ Kubernetes needs stable addresses. `kubeadm` writes the control-plane IP into ce
 
 We never configure an IP *inside* the VM. Instead, we tell the DHCP server what to answer:
 
-![Fixed MAC to fixed IP](../phase-0-1-host-and-vms/diagrams/03-dhcp-reservation.png)
+![Fixed MAC to fixed IP](diagrams/03-dhcp-reservation.png)
 
 ```bash
 for vm in "cp-1 10" "worker-1 11" "worker-2 12"; do
@@ -130,7 +129,7 @@ We don't install Ubuntu three times. We download an **Ubuntu cloud image** once 
 
 Each VM then gets a **qcow2 overlay** on top of it:
 
-![qcow2 overlays](../phase-0-1-host-and-vms/diagrams/04-qcow2-overlays.png)
+![qcow2 overlays](diagrams/04-qcow2-overlays.png)
 
 ```bash
 sudo qemu-img create -f qcow2 -F qcow2 \
@@ -148,7 +147,7 @@ It's the same idea as Docker image layers or an AWS AMI.
 
 A cloned disk is the same for every VM: no hostname, no user, no SSH keys. **cloud-init** fixes that on the first boot:
 
-![cloud-init](../phase-0-1-host-and-vms/diagrams/05-cloud-init.png)
+![cloud-init](diagrams/05-cloud-init.png)
 
 ```yaml
 #cloud-config
@@ -259,7 +258,7 @@ sudo ls -lh /var/lib/libvirt/images/   # tiny overlays next to the base
 
 We have three running VMs. Can we reach them? Not yet:
 
-![Who can talk to whom](../phase-0-1-host-and-vms/diagrams/06-who-talks-to-whom.png)
+![Who can talk to whom](diagrams/06-who-talks-to-whom.png)
 
 - **VM → Internet: OK.** Out through `virbr0`, NAT on the host, and NAT again on the router (double NAT). That's how `apt` and cloud-init work.
 - **Internet → VM: no.** Nothing outside knows `192.168.122.0/24` exists.
@@ -287,7 +286,7 @@ Host cp-1 worker-1 worker-2
 
 Now `ssh cp-1` just works. Under the hood it's a tunnel inside a tunnel:
 
-![ProxyJump](../phase-0-1-host-and-vms/diagrams/07-proxyjump.png)
+![ProxyJump](diagrams/07-proxyjump.png)
 
 1. SSH opens a connection to the HP (**SSH #1**), authenticated with my key.
 2. Through it, it asks the HP to open a plain TCP connection to `192.168.122.10:22`.
@@ -320,6 +319,6 @@ ssh worker-2 'cloud-init status --wait; hostname'
 - [x] `ssh cp-1`, `ssh worker-1` and `ssh worker-2` work from the workstation
 - [x] `cloud-init status` says `done` on all three
 
-## Next: Part 2
+## Next: [Part 2](../part-2-cluster/README.md)
 
 Three empty Ubuntu machines on a private network. In Part 2, `kubeadm` turns them into a Kubernetes cluster: container runtime, control plane on `cp-1`, workers joining, and a CNI so pods can talk.
