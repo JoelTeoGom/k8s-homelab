@@ -2,7 +2,7 @@
 
 *OS prerequisites, containerd and the Kubernetes packages, by hand on three nodes*
 
-[← Part 1: three VMs](../part-1-vms/README.md) · [Index](../../README.md) · [Part 3: the cluster →](../part-3-cluster/README.md)
+[← Part 1: three VMs](../part-1-vms/README.md) · [Index](../../README.md) · [Part 3: the control plane →](../part-3-cluster/README.md)
 
 [Part 1](../part-1-vms/README.md) left three empty Ubuntu VMs on a private network. Before `kubeadm` can turn them into a cluster, every node needs the same groundwork: an OS that meets Kubernetes' prerequisites, a container runtime, and the Kubernetes packages. That's this part. Creating the cluster is [Part 3](../part-3-cluster/README.md).
 
@@ -275,7 +275,7 @@ kubectl version --client     # Client Version: v1.34.12 · Kustomize Version: v5
 apt-mark showhold            # kubeadm kubectl kubelet
 ```
 
-Same version on all three nodes. The repo is `v1.34`; apt picked its latest patch, `.12`. And `kubectl` comes with Kustomize built in, which Part 4 will use.
+Same version on all three nodes. The repo is `v1.34`; apt picked its latest patch, `.12`. And `kubectl` comes with Kustomize built in, which a later part will use.
 
 ### The kubelet crash-loops. That's expected.
 
@@ -341,7 +341,7 @@ crictl info | grep -A12 '"conditions"'
 ```
 
 - **`RuntimeReady: true`**: containerd works.
-- **`NetworkReady: false`**: there's no pod network yet. Expected: it arrives with the CNI in [Part 3](../part-3-cluster/README.md).
+- **`NetworkReady: false`**: there's no pod network yet. Expected: it arrives with the CNI in [Part 4](../part-4-network/README.md).
 
 The network plugin side has two folders:
 

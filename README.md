@@ -19,11 +19,12 @@ Read it in order. Each part is one page: what we do, why, the commands, and a "s
 | **[0 — From old laptop to server](docs/part-0-host/README.md)** | Ubuntu Server, SSH-only access, hardening, BIOS virtualization | Done |
 | **[1 — Three VMs on an old laptop](docs/part-1-vms/README.md)** | KVM + QEMU + libvirt, the VM network, fixed IPs, cloud-init, SSH ProxyJump | Done |
 | **[2 — Preparing the nodes](docs/part-2-nodes/README.md)** | OS prerequisites, containerd, kubeadm/kubelet/kubectl, crictl | Done |
-| **[3 — Bootstrapping the cluster](docs/part-3-cluster/README.md)** | `kubeadm init`, the control plane as static pods, Flannel, `join` | In progress |
-| 4 — Traffic in | Traefik + Gateway API, DNAT on the host, Cloudflare Tunnel | Planned |
-| 5 — GitOps & CI/CD | GitHub Actions → GHCR → manifest repo → Argo CD | Planned |
-| 6 — Secrets | Sealed Secrets, then External Secrets + GCP Secret Manager | Planned |
-| 7 — Workloads | Go services, then my own GitOps operator in Go | Planned |
+| **[3 — The control plane](docs/part-3-cluster/README.md)** | `kubeadm init`, the control plane as static pods, certificates, kubectl | Done |
+| **[4 — Pod network and workers](docs/part-4-network/README.md)** | Flannel, `kubeadm join`, a smoke test | In progress |
+| 5 — Traffic in | Traefik + Gateway API, DNAT on the host, Cloudflare Tunnel | Planned |
+| 6 — GitOps & CI/CD | GitHub Actions → GHCR → manifest repo → Argo CD | Planned |
+| 7 — Secrets | Sealed Secrets, then External Secrets + GCP Secret Manager | Planned |
+| 8 — Workloads | Go services, then my own GitOps operator in Go | Planned |
 
 The same pages are published as posts on [runtimerants.dev](https://runtimerants.dev).
 
@@ -42,9 +43,11 @@ The same pages are published as posts on [runtimerants.dev](https://runtimerants
     ├── part-2-nodes/
     │   ├── README.md
     │   └── diagrams/
-    └── part-3-cluster/
-        ├── README.md
-        └── diagrams/
+    ├── part-3-cluster/
+    │   ├── README.md
+    │   └── diagrams/
+    └── part-4-network/
+        └── README.md
 ```
 
 ## Current setup
