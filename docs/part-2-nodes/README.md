@@ -1,12 +1,10 @@
-# Part 2 — A Kubernetes cluster with kubeadm
+# Part 2 — Preparing the nodes
 
-*Preparing three nodes by hand, then bootstrapping the cluster*
+*OS prerequisites, containerd and the Kubernetes packages, by hand on three nodes*
 
-[← Part 1: three VMs](../part-1-vms/README.md) · [Index](../../README.md)
+[← Part 1: three VMs](../part-1-vms/README.md) · [Index](../../README.md) · [Part 3: the cluster →](../part-3-cluster/README.md)
 
-> **Status: in progress.** All three nodes are prepared (sections 1-4, done on every node). Next: `kubeadm init` (section 7). Written while building it: every output below is from my lab.
-
-[Part 1](../part-1-vms/README.md) left three empty Ubuntu VMs on a private network. In this part they become a Kubernetes cluster: **one control plane (`cp-1`) and two workers (`worker-1`, `worker-2`)**, built with `kubeadm` and nothing else.
+[Part 1](../part-1-vms/README.md) left three empty Ubuntu VMs on a private network. Before `kubeadm` can turn them into a cluster, every node needs the same groundwork: an OS that meets Kubernetes' prerequisites, a container runtime, and the Kubernetes packages. That's this part. Creating the cluster is [Part 3](../part-3-cluster/README.md).
 
 | Node | Role | IP |
 |---|---|---|
@@ -21,10 +19,8 @@ The plan:
 3. Install kubeadm, kubelet and kubectl
 4. Add crictl, a debugging client
 5. Where we are (and what breaks if you skip a step)
-6. What `kubeadm init` and `join` actually do
-7. Bootstrap the cluster *(next)*
 
-> **How to follow along.** Sections 1-4 run on **all three nodes** (each one starts with a **Run on** note). Many kubeadm guides are written for RHEL-family distros (`dnf`, `firewalld`, SELinux); these nodes are Ubuntu 24.04, so everything here uses `apt`, `ufw` and AppArmor.
+> **How to follow along.** Everything here runs on **all three nodes** (each section starts with a **Run on** note). Many kubeadm guides are written for RHEL-family distros (`dnf`, `firewalld`, SELinux); these nodes are Ubuntu 24.04, so everything here uses `apt`, `ufw` and AppArmor.
 
 > **Tip:** before starting, snapshot the clean VMs on the host (`virsh snapshot-create-as <vm> clean-nodes` with the VM shut off). It's an undo button, and it lets you repeat the whole install as practice.
 
@@ -309,7 +305,7 @@ kubelet.service: Referenced but unset environment variable evaluates to an empty
 kubelet.service: Main process exited, code=exited, status=1/FAILURE
 ```
 
-The kubelet starts, looks for its config file, doesn't find it, exits. Its service has `Restart=always`, `RestartSec=10` and `StartLimitInterval=0`, so systemd brings it back every 10 seconds and never gives up: a node agent is meant to always be running. `kubeadm init` / `join` will write that file (section 6), and the loop stops.
+The kubelet starts, looks for its config file, doesn't find it, exits. Its service has `Restart=always`, `RestartSec=10` and `StartLimitInterval=0`, so systemd brings it back every 10 seconds and never gives up: a node agent is meant to always be running. `kubeadm init` / `join` will write that file ([Part 3](../part-3-cluster/README.md)), and the loop stops.
 
 ---
 
@@ -325,7 +321,7 @@ sudo apt-mark hold cri-tools
 echo 'runtime-endpoint: unix:///run/containerd/containerd.sock' | sudo tee /etc/crictl.yaml
 ```
 
-`/etc/crictl.yaml` tells it which runtime to talk to: `unix://` + the containerd socket from section 2.
+`/etc/crictl.yaml` tells it which runtime to talk to: `unix://` + the containerd socket from section 2 (containerd).
 
 ![Who talks to whom on a node](diagrams/02-runtime-path.png)
 
@@ -345,7 +341,7 @@ crictl info | grep -A12 '"conditions"'
 ```
 
 - **`RuntimeReady: true`**: containerd works.
-- **`NetworkReady: false`**: there's no pod network yet. Expected: it arrives with the CNI (section 7).
+- **`NetworkReady: false`**: there's no pod network yet. Expected: it arrives with the CNI in [Part 3](../part-3-cluster/README.md).
 
 The network plugin side has two folders:
 
@@ -370,68 +366,6 @@ If a node misbehaves later, start here: every row is one of the steps above, the
 
 ---
 
-## 6. What `kubeadm init` and `join` actually do
-
-The kubelet already knows **where** its config will be: the package installed a kubeadm drop-in for its service.
-
-```bash
-systemctl cat kubelet
-```
-
-```ini
-Environment="KUBELET_KUBECONFIG_ARGS=--bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf"
-Environment="KUBELET_CONFIG_ARGS=--config=/var/lib/kubelet/config.yaml"
-EnvironmentFile=-/var/lib/kubelet/kubeadm-flags.env
-ExecStart=
-ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELET_KUBEADM_ARGS $KUBELET_EXTRA_ARGS
-```
-
-(The `-` in `EnvironmentFile=-` means "fine if it doesn't exist", which is why the journal only warns about `KUBELET_KUBEADM_ARGS`. The empty `ExecStart=` clears the base unit's command before setting the new one.)
-
-Right now both folders are empty:
-
-```bash
-tree /etc/kubernetes /var/lib/kubelet
-# /etc/kubernetes
-# └── manifests
-# /var/lib/kubelet
-```
-
-`kubeadm init` (on `cp-1`) and `kubeadm join` (on the workers) fill them:
-
-| File | Tells the kubelet |
-|---|---|
-| `/var/lib/kubelet/config.yaml` | how to behave: systemd cgroups, cluster DNS, where static pods live |
-| `/var/lib/kubelet/kubeadm-flags.env` | node-specific flags: the containerd socket, the pause image |
-| `/etc/kubernetes/kubelet.conf` | who to talk to and who it is: the API server address and its client certificate |
-
-The difference between the two commands is how the node gets that certificate:
-
-- **`init` on `cp-1`** creates the cluster CA, signs the kubelet's certificate itself, and writes the **static pod manifests** for etcd, the API server, the controller-manager and the scheduler into `/etc/kubernetes/manifests`. The kubelet on `cp-1` sees them and starts them: the control plane is just pods.
-- **`join` on a worker** has no CA. It hands the kubelet a **bootstrap token**; the kubelet uses it to ask the API server for a certificate (**TLS bootstrap**), saves it, and registers itself as a node.
-
----
-
-## 7. Bootstrap the cluster *(next)*
-
-> **Run on:** `cp-1` only (`kubeadm init`). The workers come later, with `kubeadm join`.
-
-On `cp-1`, the flags that matter in this lab:
-
-| Flag | Why |
-|---|---|
-| `--apiserver-advertise-address=192.168.122.10` | the IP baked into certificates and the join command: that's why `cp-1` got a fixed IP in Part 1 |
-| `--pod-network-cidr=10.244.0.0/16` | Flannel's default range; doesn't overlap the VMs' `192.168.122.0/24` or the Services' `10.96.0.0/12` |
-| `--apiserver-cert-extra-sans=127.0.0.1` | so `kubectl` can reach the API server from the workstation through an SSH tunnel later |
-
-> **RAM:** kubeadm's preflight wants ~1700 MB on a control plane and `cp-1` has 1792 MiB. If it complains, `--ignore-preflight-errors=Mem` is acceptable in a lab.
-
-> **Never commit** the `kubeadm join ...` line (it carries a token) or `/etc/kubernetes/admin.conf` (cluster-admin credentials).
-
-*Coming next: `kubeadm init` with real output, the CNI, the workers joining, and a smoke test.*
-
----
-
 ## Things that bit me
 
 - **Running the node loop on the host.** `for n in cp-1 ...; do ssh $n ...` from `joel@homelab` fails with `Could not resolve hostname cp-1`: those aliases only exist in the workstation's `~/.ssh/config`.
@@ -439,13 +373,14 @@ On `cp-1`, the flags that matter in this lab:
 - **`systemctl is-active ufw` says `active`** with the firewall off.
 - **`crictl: command not found`**, and Ubuntu suggesting `critcl`: it's `cri-tools`.
 
-## Done when (so far)
+## Done when
 
 - [x] clocks synced, firewall inactive, swap off, modules and sysctls set on all nodes
 - [x] `/etc/hosts` with the three nodes, and every node pings the others by name
 - [x] containerd with CRI on and `SystemdCgroup = true` on all nodes
 - [x] kubeadm, kubelet, kubectl v1.34.12, held, on all nodes
 - [x] crictl on all nodes: `RuntimeReady: true`, `NetworkReady: false` (expected)
-- [ ] `kubeadm init` on `cp-1`
-- [ ] CNI installed, nodes `Ready`
-- [ ] workers joined: `kubectl get nodes` → 3 nodes `Ready`
+
+## Next: [Part 3](../part-3-cluster/README.md)
+
+Three identical nodes, ready but not yet a cluster: the kubelet is crash-looping and there's no control plane. Part 3 creates it.

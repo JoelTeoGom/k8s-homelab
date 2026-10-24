@@ -18,11 +18,12 @@ Read it in order. Each part is one page: what we do, why, the commands, and a "s
 |---|---|---|
 | **[0 — From old laptop to server](docs/part-0-host/README.md)** | Ubuntu Server, SSH-only access, hardening, BIOS virtualization | Done |
 | **[1 — Three VMs on an old laptop](docs/part-1-vms/README.md)** | KVM + QEMU + libvirt, the VM network, fixed IPs, cloud-init, SSH ProxyJump | Done |
-| **[2 — A Kubernetes cluster with kubeadm](docs/part-2-cluster/README.md)** | node prerequisites, containerd, kubeadm/kubelet/kubectl, `kubeadm init`, Flannel, `join` | In progress |
-| 3 — Traffic in | Traefik + Gateway API, DNAT on the host, Cloudflare Tunnel | Planned |
-| 4 — GitOps & CI/CD | GitHub Actions → GHCR → manifest repo → Argo CD | Planned |
-| 5 — Secrets | Sealed Secrets, then External Secrets + GCP Secret Manager | Planned |
-| 6 — Workloads | Go services, then my own GitOps operator in Go | Planned |
+| **[2 — Preparing the nodes](docs/part-2-nodes/README.md)** | OS prerequisites, containerd, kubeadm/kubelet/kubectl, crictl | Done |
+| **[3 — Bootstrapping the cluster](docs/part-3-cluster/README.md)** | `kubeadm init`, the control plane as static pods, Flannel, `join` | In progress |
+| 4 — Traffic in | Traefik + Gateway API, DNAT on the host, Cloudflare Tunnel | Planned |
+| 5 — GitOps & CI/CD | GitHub Actions → GHCR → manifest repo → Argo CD | Planned |
+| 6 — Secrets | Sealed Secrets, then External Secrets + GCP Secret Manager | Planned |
+| 7 — Workloads | Go services, then my own GitOps operator in Go | Planned |
 
 The same pages are published as posts on [runtimerants.dev](https://runtimerants.dev).
 
@@ -38,7 +39,10 @@ The same pages are published as posts on [runtimerants.dev](https://runtimerants
     ├── part-1-vms/
     │   ├── README.md
     │   └── diagrams/          # .png + .excalidraw sources
-    └── part-2-cluster/
+    ├── part-2-nodes/
+    │   ├── README.md
+    │   └── diagrams/
+    └── part-3-cluster/
         ├── README.md
         └── diagrams/
 ```
