@@ -51,7 +51,7 @@ tree /etc/kubernetes /var/lib/kubelet
 | File | Tells the kubelet |
 |---|---|
 | `/var/lib/kubelet/config.yaml` | how to behave: systemd cgroups, cluster DNS, where static pods live |
-| `/var/lib/kubelet/kubeadm-flags.env` | node-specific flags: the containerd socket, the pause image |
+| `/var/lib/kubelet/kubeadm-flags.env` | node-specific flags, such as the node IP from our config file |
 | `/etc/kubernetes/kubelet.conf` | who to talk to and who it is: the API server address and its client certificate |
 
 The difference between the two commands is how the node gets that certificate:

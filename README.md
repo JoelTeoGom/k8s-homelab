@@ -26,6 +26,10 @@ Read it in order. Each part is one page: what we do, why, the commands, and a "s
 | 7 — Secrets | Sealed Secrets, then External Secrets + GCP Secret Manager | Planned |
 | 8 — Workloads | Go services, then my own GitOps operator in Go | Planned |
 
+**Deep dives**, side pages for the curious, linked from the parts where they come up:
+
+- [What's inside a pod](docs/deep-dives/pods-and-pause/README.md): containers vs pods, and the `pause` container that does nothing
+
 The same pages are published as posts on [runtimerants.dev](https://runtimerants.dev).
 
 ## Layout
@@ -46,8 +50,11 @@ The same pages are published as posts on [runtimerants.dev](https://runtimerants
     ├── part-3-cluster/
     │   ├── README.md
     │   └── diagrams/
-    └── part-4-network/
-        └── README.md
+    ├── part-4-network/
+    │   ├── README.md
+    │   └── diagrams/
+    └── deep-dives/
+        └── pods-and-pause/    # side pages: README.md + diagrams/
 ```
 
 ## Current setup

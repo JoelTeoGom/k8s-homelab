@@ -4,7 +4,7 @@
 
 [← Part 0: the host](../part-0-host/README.md) · [Index](../../README.md) · [Part 2: the nodes →](../part-2-nodes/README.md)
 
-In [Part 0](../part-0-host/README.md) an old HP laptop became a headless Ubuntu server sitting on my desk. In this part we turn it into **three machines**: one control plane and two workers, ready for `kubeadm` in Part 2.
+In [Part 0](../part-0-host/README.md) an old HP laptop became a headless Ubuntu server sitting on my desk. In this part we turn it into **three machines**: one control plane and two workers, ready to be prepared for Kubernetes in Part 2.
 
 No Proxmox, no Multipass, no magic. Just the same three pieces that power a big chunk of the cloud underneath: **KVM, QEMU and libvirt**. Every step gets a "what just happened" and a command so you can see it for yourself.
 
@@ -321,4 +321,4 @@ ssh worker-2 'cloud-init status --wait; hostname'
 
 ## Next: [Part 2](../part-2-nodes/README.md)
 
-Three empty Ubuntu machines on a private network. In Part 2, `kubeadm` turns them into a Kubernetes cluster: container runtime, control plane on `cp-1`, workers joining, and a CNI so pods can talk.
+Three empty Ubuntu machines on a private network. Part 2 gets every node ready for Kubernetes: OS prerequisites, the container runtime and the Kubernetes packages.
