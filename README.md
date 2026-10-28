@@ -29,6 +29,8 @@ Read it in order. Each part is one page: what we do, why, the commands, and a "s
 **Deep dives**, side pages for the curious, linked from the parts where they come up:
 
 - [What's inside a pod](docs/deep-dives/pods-and-pause/README.md): containers vs pods, and the `pause` container that does nothing
+- [How the VXLAN tunnel works](docs/deep-dives/vxlan/README.md): a packet's trip from a pod on one node to a pod on another
+- [Routing pods with BGP](docs/deep-dives/bgp/README.md): the alternative to VXLAN, teaching the network where the pods are
 
 The same pages are published as posts on [runtimerants.dev](https://runtimerants.dev).
 
@@ -54,7 +56,9 @@ The same pages are published as posts on [runtimerants.dev](https://runtimerants
     │   ├── README.md
     │   └── diagrams/
     └── deep-dives/
-        └── pods-and-pause/    # side pages: README.md + diagrams/
+        ├── pods-and-pause/    # side pages: README.md + diagrams/
+        ├── vxlan/
+        └── bgp/
 ```
 
 ## Current setup
